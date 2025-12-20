@@ -1,0 +1,21 @@
+{
+  "name": "Event Manager",
+  "short_name": "EventMgr",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdf2f8",
+  "theme_color": "#831843",
+  "description": "A comprehensive customer relationship management tool for event halls.",
+  "icons": [
+    {
+      "src": "https://cdn.lucide.dev/icon/calendar-heart.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "https://cdn.lucide.dev/icon/calendar-heart.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
