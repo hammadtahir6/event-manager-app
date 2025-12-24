@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Building2, Users, ArrowRight, Phone, Mail, Globe, ChevronDown, Briefcase, Smartphone } from 'lucide-react';
 import PolicyModal from './PolicyModal';
@@ -27,15 +26,51 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup, onNavigateToLogin, on
   const [agreed, setAgreed] = useState(false);
   const [policyType, setPolicyType] = useState<'privacy' | 'terms' | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreed) return;
     setIsLoading(true);
-    setTimeout(() => {
-      const fullIdentifier = signupMethod === 'email' ? identifier : `${selectedDialCode}${identifier.replace(/\D/g, '')}`;
-      onSignup(activeTab, name, fullIdentifier, country, activeTab === 'business' ? businessType : undefined);
+
+    // 1. Construct Full Identifier
+    const fullIdentifier = signupMethod === 'email' 
+      ? identifier 
+      : `${selectedDialCode}${identifier.replace(/\D/g, '')}`;
+
+    try {
+      // 2. Call the Real Backend API
+      const response = await fetch('http://localhost:5000/api/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: name,
+          email: fullIdentifier, // Sending as 'email' to match backend schema
+          password: password,
+          role: activeTab,
+          country: country,
+          // Sending businessType if it's a business user (backend might need to be updated to store this if not already)
+          businessType: activeTab === 'business' ? businessType : undefined 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // 3. Success Logic
+        alert('Account created successfully! Please log in.');
+        onNavigateToLogin();
+      } else {
+        // 4. Handle Server Errors (e.g., "User already exists")
+        alert(data.error || 'Signup failed. Please try again.');
+      }
+    } catch (error) {
+      // 5. Handle Network Errors
+      console.error('Signup error:', error);
+      alert('Network error. Is the backend server running on port 5000?');
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   const toggleMethod = () => {

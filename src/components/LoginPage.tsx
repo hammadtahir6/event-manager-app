@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Building2, Users, ArrowRight, Phone, Mail, ChevronDown, Smartphone } from 'lucide-react';
 import Logo from './Logo';
@@ -20,14 +19,49 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToSignup, onOp
   const [isLoading, setIsLoading] = useState(false);
   const { t, language } = useLanguage();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      const fullIdentifier = loginMethod === 'email' ? identifier : `${selectedDialCode}${identifier.replace(/\D/g, '')}`;
-      onLogin(activeTab, fullIdentifier);
+
+    // 1. Construct the full identifier (Email or Phone)
+    const fullIdentifier = loginMethod === 'email' 
+      ? identifier 
+      : `${selectedDialCode}${identifier.replace(/\D/g, '')}`;
+
+    try {
+      // 2. Call the Real Backend API
+      const response = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: fullIdentifier, // Sending fullIdentifier as 'email' to match backend expectation
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // 3. Success Logic
+        // Save the JWT token for future authenticated requests
+        localStorage.setItem('token', data.token);
+        
+        // Notify the parent component that login was successful
+        // We use the role returned from the database to ensure it's correct
+        onLogin(data.user.role, data.user.email);
+      } else {
+        // 4. Handle Server Errors (e.g., "User not found", "Invalid password")
+        alert(data.error || 'Login failed. Please check your credentials.');
+      }
+    } catch (error) {
+      // 5. Handle Network Errors (e.g., Backend not running)
+      console.error('Login error:', error);
+      alert('Network error. Is the backend server running on port 5000?');
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   const toggleMethod = () => {
