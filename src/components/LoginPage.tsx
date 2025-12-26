@@ -23,7 +23,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToSignup, onOp
     try {
       // REPLACE THIS URL WITH YOUR RAILWAY/RENDER URL AFTER DEPLOYMENT
       // Example: const API_URL = 'https://event-manager-backend.up.railway.app';
-      const API_URL = 'event-manager-backend-production-1db4.up.railway.app'; 
+      const API_URL = 'https://event-manager-backend-production-1db4.up.railway.app'; 
       
       console.log(`Attempting login to: ${API_URL}/api/login`);
 
