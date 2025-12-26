@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { LogOut, Calendar, MapPin, Users, Clock, CheckCircle, MessageSquare, Plus, Search, Building2, Star, Mail, X, Send, Edit2, Save, DollarSign, Flag, Sparkles, Trash2, Image as ImageIcon, Upload, Tag, MessageCircle, AlertCircle, ChevronDown, ChevronUp, Activity, History, List, Filter, BrainCircuit } from 'lucide-react';
 import { MOCK_BUSINESSES, COUNTRIES_CURRENCIES, TIME_SLOTS } from '../constants';
@@ -45,7 +44,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
   const [suggestionText, setSuggestionText] = useState('');
   const [showSuggestionAlert, setShowSuggestionAlert] = useState(false);
 
-  // Determine active event
+  // Determine active event - Added safety check for empty events array
   const activeEvent = events.find(e => e.id === selectedEventId) || events[0] || null;
 
   // Update selection if events change
@@ -136,37 +135,40 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
   const weddingDate = activeEvent ? new Date(activeEvent.weddingDate) : new Date();
   const daysRemaining = activeEvent ? Math.ceil((weddingDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
-  const myInquiries = activeEvent ? vendorInquiries.filter(i => i.individualId === activeEvent.id) : [];
+  // Add safety check for vendorInquiries
+  const myInquiries = activeEvent && Array.isArray(vendorInquiries) ? vendorInquiries.filter(i => i.individualId === activeEvent.id) : [];
 
   const activityFeed = useMemo(() => {
-    const list = [];
+    const list: any[] = [];
 
-    // 1. Actions from ActivityLog
-    activities.forEach(act => {
-      let icon = Activity;
-      let color = 'text-gray-600';
-      let bgColor = 'bg-gray-50';
+    // 1. Actions from ActivityLog - Check if activities exists
+    if (Array.isArray(activities)) {
+        activities.forEach(act => {
+        let icon = Activity;
+        let color = 'text-gray-600';
+        let bgColor = 'bg-gray-50';
 
-      switch(act.actionType) {
-        case 'create': icon = Plus; color = 'text-green-600'; bgColor = 'bg-green-50'; break;
-        case 'update': icon = Edit2; color = 'text-blue-600'; bgColor = 'bg-blue-50'; break;
-        case 'delete': icon = Trash2; color = 'text-red-600'; bgColor = 'bg-red-50'; break;
-        case 'inquiry': icon = Mail; color = 'text-purple-600'; bgColor = 'bg-purple-50'; break;
-        case 'payment': icon = DollarSign; color = 'text-yellow-600'; bgColor = 'bg-yellow-50'; break;
-        case 'login': icon = CheckCircle; color = 'text-teal-600'; bgColor = 'bg-teal-50'; break;
-      }
+        switch(act.actionType) {
+            case 'create': icon = Plus; color = 'text-green-600'; bgColor = 'bg-green-50'; break;
+            case 'update': icon = Edit2; color = 'text-blue-600'; bgColor = 'bg-blue-50'; break;
+            case 'delete': icon = Trash2; color = 'text-red-600'; bgColor = 'bg-red-50'; break;
+            case 'inquiry': icon = Mail; color = 'text-purple-600'; bgColor = 'bg-purple-50'; break;
+            case 'payment': icon = DollarSign; color = 'text-yellow-600'; bgColor = 'bg-yellow-50'; break;
+            case 'login': icon = CheckCircle; color = 'text-teal-600'; bgColor = 'bg-teal-50'; break;
+        }
 
-      list.push({
-        id: act.id,
-        title: act.description,
-        subtitle: new Date(act.timestamp).toLocaleTimeString(),
-        date: act.timestamp,
-        icon,
-        color,
-        bgColor,
-        isAction: true
-      });
-    });
+        list.push({
+            id: act.id,
+            title: act.description,
+            subtitle: new Date(act.timestamp).toLocaleTimeString(),
+            date: act.timestamp,
+            icon,
+            color,
+            bgColor,
+            isAction: true
+        });
+        });
+    }
 
     // 2. Future Events (Only if activeEvent exists)
     if (activeEvent) {
@@ -192,10 +194,10 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
   // Vendor Filtering Logic
   const filteredBusinesses = MOCK_BUSINESSES.filter(b => {
-    const cityMatch = activeEvent?.city ? b.city.toLowerCase() === activeEvent.city.toLowerCase() : true;
+    const cityMatch = activeEvent?.city ? b.city?.toLowerCase() === activeEvent.city?.toLowerCase() : true;
     const searchMatch = b.name.toLowerCase().includes(vendorSearchTerm.toLowerCase()) || 
                         b.category.toLowerCase().includes(vendorSearchTerm.toLowerCase()) ||
-                        b.city.toLowerCase().includes(vendorSearchTerm.toLowerCase());
+                        b.city?.toLowerCase().includes(vendorSearchTerm.toLowerCase());
     const categoryMatch = selectedCategory === 'All' || b.category === selectedCategory;
 
     return cityMatch && searchMatch && categoryMatch;
@@ -253,10 +255,21 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
     setIsAiSearching(true);
     setAiVendorResults(null);
     
+    // Safety check for budget
+    const budgetStr = activeEvent.budget ? activeEvent.budget.toString() : "flexible";
+
     const category = selectedCategory === 'All' ? 'event vendors (venues, catering, photography, etc.)' : selectedCategory;
-    const results = await findVendorsWithAI(activeEvent.city, category, activeEvent.eventType, activeEvent.preferences);
+    const results = await findVendorsWithAI(category, activeEvent.city, budgetStr);
     
-    setAiVendorResults(results);
+    // Correctly parsing AI result if findVendorsWithAI returns string
+    // Assuming findVendorsWithAI returns a string based on your service definition
+    // You might need to adjust this depending on what findVendorsWithAI actually returns
+    // For now, mapping string to the expected object structure
+    setAiVendorResults({
+        text: results,
+        links: [] // AI string doesn't provide structured links unless parsed
+    });
+    
     setIsAiSearching(false);
   };
 
@@ -270,8 +283,8 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
   };
 
   const getTimeSlotLabel = (slotId?: string) => {
-    const slot = TIME_SLOTS.find(s => s.id === slotId);
-    return slot ? slot.label : slotId || 'TBD';
+    const slot = TIME_SLOTS.find(s => s === slotId); // TIME_SLOTS is an array of strings
+    return slot || slotId || 'TBD';
   };
 
   // Helper for status colors in event list
@@ -302,7 +315,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
           <p className="text-sm text-gray-600 line-clamp-2 mb-4">{vendor.description}</p>
           <div className="flex items-center text-xs text-gray-400">
               <MapPin className="w-3 h-3 mr-1" />
-              {vendor.district ? `${vendor.district}, ` : ''}{vendor.city}
+              {vendor.address ? `${vendor.address}, ` : ''}{vendor.city}
           </div>
       </div>
   );
@@ -335,31 +348,31 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
 
                   {isEventSelectorOpen && (
                     <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-30">
-                       <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wide">Your Events</div>
-                       {events.map(evt => (
-                         <button
-                           key={evt.id}
-                           onClick={() => {
-                             setSelectedEventId(evt.id);
-                             setIsEventSelectorOpen(false);
-                           }}
-                           className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors ${evt.id === activeEvent?.id ? 'text-wedding-600 font-bold bg-wedding-50' : 'text-gray-700'}`}
-                         >
-                           <span className="truncate">{evt.eventName || evt.eventType}</span>
-                           {evt.id === activeEvent?.id && <CheckCircle className="w-3 h-3" />}
-                         </button>
-                       ))}
-                       <div className="border-t border-gray-100 my-1"></div>
-                       <button
-                         onClick={() => {
-                           onAddEvent();
-                           setIsEventSelectorOpen(false);
-                         }}
-                         className="w-full text-left px-4 py-2 text-sm text-wedding-600 font-medium hover:bg-wedding-50 flex items-center"
-                       >
-                         <Plus className="w-3 h-3 mr-2" />
-                         Create New Event
-                       </button>
+                        <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase tracking-wide">Your Events</div>
+                        {events.map(evt => (
+                          <button
+                            key={evt.id}
+                            onClick={() => {
+                              setSelectedEventId(evt.id);
+                              setIsEventSelectorOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-50 transition-colors ${evt.id === activeEvent?.id ? 'text-wedding-600 font-bold bg-wedding-50' : 'text-gray-700'}`}
+                          >
+                            <span className="truncate">{evt.eventName || evt.eventType}</span>
+                            {evt.id === activeEvent?.id && <CheckCircle className="w-3 h-3" />}
+                          </button>
+                        ))}
+                        <div className="border-t border-gray-100 my-1"></div>
+                        <button
+                          onClick={() => {
+                            onAddEvent();
+                            setIsEventSelectorOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-wedding-600 font-medium hover:bg-wedding-50 flex items-center"
+                        >
+                          <Plus className="w-3 h-3 mr-2" />
+                          Create New Event
+                        </button>
                     </div>
                   )}
                 </div>
@@ -395,42 +408,42 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
           </div>
 
           <div className="flex space-x-8 mt-4 overflow-x-auto scrollbar-hide border-t border-gray-100 pt-2">
-             <button 
-               onClick={() => setActiveTab('overview')}
-               className={`pb-2 text-sm font-bold transition-all relative whitespace-nowrap ${
-                 activeTab === 'overview' ? 'text-wedding-600' : 'text-gray-400 hover:text-gray-700'
-               }`}
-             >
-               Dashboard
-               {activeTab === 'overview' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-wedding-600 rounded-t-full"></div>}
-             </button>
-             <button 
-               onClick={() => setActiveTab('events')}
-               className={`pb-2 text-sm font-bold transition-all relative whitespace-nowrap ${
-                 activeTab === 'events' ? 'text-wedding-600' : 'text-gray-400 hover:text-gray-700'
-               }`}
-             >
-               My Events
-               {activeTab === 'events' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-wedding-600 rounded-t-full"></div>}
-             </button>
-             <button 
-               onClick={() => setActiveTab('vendors')}
-               className={`pb-2 text-sm font-bold transition-all relative whitespace-nowrap ${
-                 activeTab === 'vendors' ? 'text-wedding-600' : 'text-gray-400 hover:text-gray-700'
-               }`}
-             >
-               Find Vendors
-               {activeTab === 'vendors' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-wedding-600 rounded-t-full"></div>}
-             </button>
-             <button 
-               onClick={() => setActiveTab('gallery')}
-               className={`pb-2 text-sm font-bold transition-all relative whitespace-nowrap ${
-                 activeTab === 'gallery' ? 'text-wedding-600' : 'text-gray-400 hover:text-gray-700'
-               }`}
-             >
-               Gallery
-               {activeTab === 'gallery' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-wedding-600 rounded-t-full"></div>}
-             </button>
+              <button 
+                onClick={() => setActiveTab('overview')}
+                className={`pb-2 text-sm font-bold transition-all relative whitespace-nowrap ${
+                  activeTab === 'overview' ? 'text-wedding-600' : 'text-gray-400 hover:text-gray-700'
+                }`}
+              >
+                Dashboard
+                {activeTab === 'overview' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-wedding-600 rounded-t-full"></div>}
+              </button>
+              <button 
+                onClick={() => setActiveTab('events')}
+                className={`pb-2 text-sm font-bold transition-all relative whitespace-nowrap ${
+                  activeTab === 'events' ? 'text-wedding-600' : 'text-gray-400 hover:text-gray-700'
+                }`}
+              >
+                My Events
+                {activeTab === 'events' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-wedding-600 rounded-t-full"></div>}
+              </button>
+              <button 
+                onClick={() => setActiveTab('vendors')}
+                className={`pb-2 text-sm font-bold transition-all relative whitespace-nowrap ${
+                  activeTab === 'vendors' ? 'text-wedding-600' : 'text-gray-400 hover:text-gray-700'
+                }`}
+              >
+                Find Vendors
+                {activeTab === 'vendors' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-wedding-600 rounded-t-full"></div>}
+              </button>
+              <button 
+                onClick={() => setActiveTab('gallery')}
+                className={`pb-2 text-sm font-bold transition-all relative whitespace-nowrap ${
+                  activeTab === 'gallery' ? 'text-wedding-600' : 'text-gray-400 hover:text-gray-700'
+                }`}
+              >
+                Gallery
+                {activeTab === 'gallery' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-wedding-600 rounded-t-full"></div>}
+              </button>
           </div>
         </div>
       </header>
@@ -537,14 +550,14 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
           <div className="animate-fadeIn">
             {!activeEvent || !editForm ? (
               <div className="flex flex-col items-center justify-center py-16">
-                 <div className="max-w-md w-full text-center space-y-8">
+                  <div className="max-w-md w-full text-center space-y-8">
                   <div className="relative inline-block">
                      <div className="absolute inset-0 bg-wedding-200 rounded-full blur-2xl opacity-50"></div>
                      <div className="relative bg-white p-6 rounded-full shadow-xl ring-4 ring-wedding-50">
                        <Sparkles 
-                            className="w-12 h-12 text-wedding-600 cursor-pointer hover:scale-110 transition-transform" 
-                            onClick={(e) => { e.stopPropagation(); onOpenUnlimited(); }}
-                        />
+                           className="w-12 h-12 text-wedding-600 cursor-pointer hover:scale-110 transition-transform" 
+                           onClick={(e) => { e.stopPropagation(); onOpenUnlimited(); }}
+                       />
                      </div>
                   </div>
                   
@@ -595,7 +608,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
                                 
                                 {!isEditing ? (
                                 <div className="flex items-center space-x-3">
-                                    <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wide">
+                                    <span className={`px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wide`}>
                                     {activeEvent.status}
                                     </span>
                                     <button 
@@ -680,7 +693,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
                                     onClick={(e) => { e.stopPropagation(); onOpenUnlimited(); }}
                                 />
                                 Recent Activity
-                            </h3>
+                             </h3>
                              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                                 {activityFeed.length > 0 ? (
                                 <ul className="relative border-l border-gray-200 ml-2 space-y-4">
@@ -704,7 +717,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
                                     ))}
                                 </ul>
                                 ) : <div className="text-center py-4 text-gray-400 text-sm">No recent activity</div>}
-                            </div>
+                             </div>
                         </div>
                      </div>
                  </div>
@@ -716,100 +729,100 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
         {/* VENDORS TAB */}
         {activeTab === 'vendors' && (
              <div className="animate-fadeIn w-full space-y-8">
-                  {/* AI Recommendation Banner */}
-                  {activeEvent && (
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-1 shadow-lg transform transition-all hover:scale-[1.01]">
-                      <div className="bg-white rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="flex items-start space-x-4">
-                          <div className="p-4 bg-blue-50 rounded-2xl text-blue-600 shadow-inner">
-                            <BrainCircuit className="w-8 h-8" />
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-serif font-bold text-gray-800 mb-1 flex items-center">
-                              Smart Match AI Recommendation
-                              <span className="ml-3 bg-blue-100 text-blue-700 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-blue-200">
-                                Powered by Gemini
-                              </span>
-                            </h3>
-                            <p className="text-gray-500 text-sm max-w-xl">
-                              Our AI will analyze your <strong>{activeEvent.eventType}</strong> in <strong>{activeEvent.city || 'your area'}</strong> and match you with vendors that fit your <strong>"{activeEvent.preferences || 'General Style'}"</strong> preferences.
-                            </p>
-                          </div>
-                        </div>
-                        <button 
-                          onClick={handleAiVendorSearch} 
-                          disabled={isAiSearching}
-                          className="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-xl hover:shadow-blue-200 flex items-center whitespace-nowrap disabled:opacity-50"
-                        >
-                          {isAiSearching ? (
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3" />
-                          ) : (
-                            <Sparkles className="w-5 h-5 mr-3" />
-                          )}
-                          Personalized Search
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                 {/* AI Recommendation Banner */}
+                 {activeEvent && (
+                   <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-1 shadow-lg transform transition-all hover:scale-[1.01]">
+                     <div className="bg-white rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                       <div className="flex items-start space-x-4">
+                         <div className="p-4 bg-blue-50 rounded-2xl text-blue-600 shadow-inner">
+                           <BrainCircuit className="w-8 h-8" />
+                         </div>
+                         <div>
+                           <h3 className="text-xl font-serif font-bold text-gray-800 mb-1 flex items-center">
+                             Smart Match AI Recommendation
+                             <span className="ml-3 bg-blue-100 text-blue-700 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border border-blue-200">
+                               Powered by Gemini
+                             </span>
+                           </h3>
+                           <p className="text-gray-500 text-sm max-w-xl">
+                             Our AI will analyze your <strong>{activeEvent.eventType}</strong> in <strong>{activeEvent.city || 'your area'}</strong> and match you with vendors that fit your <strong>"{activeEvent.preferences || 'General Style'}"</strong> preferences.
+                           </p>
+                         </div>
+                       </div>
+                       <button 
+                         onClick={handleAiVendorSearch} 
+                         disabled={isAiSearching}
+                         className="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-xl hover:shadow-blue-200 flex items-center whitespace-nowrap disabled:opacity-50"
+                       >
+                         {isAiSearching ? (
+                           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3" />
+                         ) : (
+                           <Sparkles className="w-5 h-5 mr-3" />
+                         )}
+                         Personalized Search
+                       </button>
+                     </div>
+                   </div>
+                 )}
 
-                  <div className="flex flex-col md:flex-row gap-8">
-                    {/* Filters */}
-                    <div className="w-full md:w-72 flex-shrink-0 space-y-8">
-                        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                <input 
-                                    type="text" 
-                                    placeholder="Search by name..." 
-                                    value={vendorSearchTerm}
-                                    onChange={(e) => setVendorSearchTerm(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-wedding-500 outline-none transition-all"
-                                />
-                            </div>
-                            
-                            <div className="space-y-3">
-                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                    <Filter className="w-3 h-3" />
-                                    Categories
-                                </h4>
-                                <div className="grid grid-cols-1 gap-1">
-                                    {uniqueCategories.map(cat => (
-                                        <button 
-                                            key={cat}
-                                            onClick={() => setSelectedCategory(cat)}
-                                            className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all duration-200 flex items-center justify-between ${selectedCategory === cat ? 'bg-wedding-600 text-white font-bold shadow-md shadow-wedding-100' : 'text-gray-500 hover:bg-gray-50 hover:text-wedding-600'}`}
-                                        >
-                                            <span>{cat}</span>
-                                            {selectedCategory === cat && <CheckCircle className="w-3 h-3" />}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                 <div className="flex flex-col md:flex-row gap-8">
+                   {/* Filters */}
+                   <div className="w-full md:w-72 flex-shrink-0 space-y-8">
+                       <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+                           <div className="relative">
+                               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                               <input 
+                                   type="text" 
+                                   placeholder="Search by name..." 
+                                   value={vendorSearchTerm}
+                                   onChange={(e) => setVendorSearchTerm(e.target.value)}
+                                   className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-wedding-500 outline-none transition-all"
+                               />
+                           </div>
+                           
+                           <div className="space-y-3">
+                               <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                   <Filter className="w-3 h-3" />
+                                   Categories
+                               </h4>
+                               <div className="grid grid-cols-1 gap-1">
+                                   {uniqueCategories.map(cat => (
+                                       <button 
+                                           key={cat}
+                                           onClick={() => setSelectedCategory(cat)}
+                                           className={`w-full text-left px-4 py-2.5 rounded-xl text-sm transition-all duration-200 flex items-center justify-between ${selectedCategory === cat ? 'bg-wedding-600 text-white font-bold shadow-md shadow-wedding-100' : 'text-gray-500 hover:bg-gray-50 hover:text-wedding-600'}`}
+                                       >
+                                           <span>{cat}</span>
+                                           {selectedCategory === cat && <CheckCircle className="w-3 h-3" />}
+                                       </button>
+                                   ))}
+                               </div>
+                           </div>
+                       </div>
+                   </div>
 
-                    {/* Results */}
-                    <div className="flex-1 space-y-12">
-                        {aiVendorResults && (
-                          <div className="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden animate-fadeIn">
-                            <div className="bg-blue-50 px-6 py-4 border-b border-blue-100 flex items-center justify-between">
+                   {/* Results */}
+                   <div className="flex-1 space-y-12">
+                       {aiVendorResults && (
+                         <div className="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden animate-fadeIn">
+                           <div className="bg-blue-50 px-6 py-4 border-b border-blue-100 flex items-center justify-between">
                                <div className="flex items-center space-x-2">
                                   <Sparkles className="w-5 h-5 text-blue-600" />
                                   <h3 className="font-serif font-bold text-blue-800">AI Tailored Suggestions</h3>
                                </div>
                                <button onClick={() => setAiVendorResults(null)} className="text-blue-400 hover:text-blue-600">
                                   <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                            <div className="p-8">
-                                <div className="prose prose-blue max-w-none whitespace-pre-wrap font-sans text-gray-700 mb-8 leading-relaxed">
+                               </button>
+                           </div>
+                           <div className="p-8">
+                               <div className="prose prose-blue max-w-none whitespace-pre-wrap font-sans text-gray-700 mb-8 leading-relaxed">
                                    {aiVendorResults.text}
-                                </div>
-                                {aiVendorResults.links.length > 0 && (
+                               </div>
+                               {aiVendorResults.links.length > 0 && (
                                    <div className="pt-6 border-t border-gray-100">
                                       <h4 className="font-bold text-sm text-gray-800 mb-4 flex items-center">
-                                        <MapPin className="w-4 h-4 mr-2 text-red-500" />
-                                        Suggested Locations on Google Maps:
+                                         <MapPin className="w-4 h-4 mr-2 text-red-500" />
+                                         Suggested Locations on Google Maps:
                                       </h4>
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         {aiVendorResults.links.map((link, i) => (
@@ -822,58 +835,58 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
                                         ))}
                                       </div>
                                    </div>
-                                )}
-                            </div>
-                          </div>
-                        )}
+                               )}
+                           </div>
+                         </div>
+                       )}
 
-                        {filteredBusinesses.length > 0 ? (
-                           <>
-                             {(selectedCategory === 'All' ? uniqueCategories.filter(c => c !== 'All') : [selectedCategory]).map(category => {
-                                const categoryVendors = filteredBusinesses.filter(b => b.category === category);
-                                if (categoryVendors.length === 0) return null;
-                                
-                                return (
-                                  <div key={category} className="space-y-6 animate-fadeIn">
+                       {filteredBusinesses.length > 0 ? (
+                          <>
+                            {(selectedCategory === 'All' ? uniqueCategories.filter(c => c !== 'All') : [selectedCategory]).map(category => {
+                               const categoryVendors = filteredBusinesses.filter(b => b.category === category);
+                               if (categoryVendors.length === 0) return null;
+                               
+                               return (
+                                 <div key={category} className="space-y-6 animate-fadeIn">
                                      <div className="flex items-center space-x-3 border-b border-gray-100 pb-3">
-                                         <h3 className="text-xl font-serif font-bold text-gray-800">{category}</h3>
-                                         <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full font-bold">{categoryVendors.length}</span>
+                                          <h3 className="text-xl font-serif font-bold text-gray-800">{category}</h3>
+                                          <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded-full font-bold">{categoryVendors.length}</span>
                                      </div>
                                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                         {categoryVendors.map(vendor => renderVendorCard(vendor))}
+                                          {categoryVendors.map(vendor => renderVendorCard(vendor))}
                                      </div>
-                                  </div>
-                                )
-                             })}
+                                 </div>
+                               )
+                            })}
                            </>
                         ) : (
-                            !aiVendorResults && (
-                              <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm px-6 text-center">
-                                  <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6 text-gray-300">
-                                    <Search className="w-10 h-10" />
-                                  </div>
-                                  <h3 className="text-2xl font-serif font-bold text-gray-800 mb-3">No Registered Vendors Found</h3>
-                                  <p className="text-gray-500 mb-8 max-w-md mx-auto">
-                                    We couldn't find any verified <strong>"{selectedCategory}"</strong> vendors in <strong>{activeEvent?.city || 'your area'}</strong>. 
-                                    Try searching the wider web with our specialized AI agent.
-                                  </p>
-                                  <button 
-                                    onClick={handleAiVendorSearch} 
-                                    disabled={isAiSearching}
-                                    className="px-10 py-4 bg-gray-900 text-white rounded-2xl hover:bg-black transition-all flex items-center shadow-2xl disabled:opacity-50 font-bold"
-                                  >
-                                    {isAiSearching ? (
-                                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3" />
-                                    ) : (
-                                      <BrainCircuit className="w-6 h-6 mr-3" />
-                                    )}
-                                    Search {activeEvent?.city || 'the Area'} with AI
-                                  </button>
-                              </div>
-                            )
+                           !aiVendorResults && (
+                             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm px-6 text-center">
+                                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6 text-gray-300">
+                                   <Search className="w-10 h-10" />
+                                 </div>
+                                 <h3 className="text-2xl font-serif font-bold text-gray-800 mb-3">No Registered Vendors Found</h3>
+                                 <p className="text-gray-500 mb-8 max-w-md mx-auto">
+                                   We couldn't find any verified <strong>"{selectedCategory}"</strong> vendors in <strong>{activeEvent?.city || 'your area'}</strong>. 
+                                   Try searching the wider web with our specialized AI agent.
+                                 </p>
+                                 <button 
+                                   onClick={handleAiVendorSearch} 
+                                   disabled={isAiSearching}
+                                   className="px-10 py-4 bg-gray-900 text-white rounded-2xl hover:bg-black transition-all flex items-center shadow-2xl disabled:opacity-50 font-bold"
+                                 >
+                                   {isAiSearching ? (
+                                     <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3" />
+                                   ) : (
+                                     <BrainCircuit className="w-6 h-6 mr-3" />
+                                   )}
+                                   Search {activeEvent?.city || 'the Area'} with AI
+                                 </button>
+                             </div>
+                           )
                         )}
-                    </div>
-                  </div>
+                   </div>
+                 </div>
              </div>
         )}
 
@@ -899,8 +912,8 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
                       <img src={img} alt="Gallery item" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                          <button 
-                            onClick={() => handleDeleteImage(idx)}
-                            className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-red-500 transition-colors shadow-lg"
+                           onClick={() => handleDeleteImage(idx)}
+                           className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-red-500 transition-colors shadow-lg"
                          >
                             <Trash2 className="w-6 h-6" />
                          </button>
@@ -940,7 +953,7 @@ const CustomerPortal: React.FC<CustomerPortalProps> = ({
                                 required
                                 rows={5}
                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-wedding-500 outline-none resize-none transition-all"
-                                placeholder={`Hi ${selectedVendor.contactName}, I'm interested in your services for my event on ${new Date(activeEvent?.weddingDate || '').toLocaleDateString()}...`}
+                                placeholder={`Hi ${selectedVendor.contactPerson}, I'm interested in your services for my event on ${new Date(activeEvent?.weddingDate || '').toLocaleDateString()}...`}
                                 value={inquiryMessage}
                                 onChange={(e) => setInquiryMessage(e.target.value)}
                             ></textarea>

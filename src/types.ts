@@ -63,6 +63,7 @@ export interface Business {
   email: string;
   phone: string;
   address: string;
+  city?: string;
   rating: number;
   reviews: number;
   status: 'Active' | 'Pending' | 'Inactive';
