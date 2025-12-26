@@ -1,4 +1,3 @@
-
 export enum BookingStatus {
   Inquiry = 'Inquiry',
   TourScheduled = 'Tour Scheduled',
@@ -23,27 +22,22 @@ export enum EventType {
 
 export interface Individual {
   id: string;
-  eventType: string; // Using string to allow flexibility but typically from EventType
+  eventType: string;
   eventName?: string;
   name: string;
   partnerName?: string;
   email: string;
   phone: string;
-  weddingDate: string; // Keeping variable name for compatibility, UI will show "Event Date"
+  weddingDate: string;
   eventTime?: string;
   dueDate?: string;
-  
-  // Location Details
   venue?: string; 
   district?: string;
   city?: string;
   country?: string;
-  
-  // Financials
   guestCount: number;
   budget?: number;
-  currency?: string; // e.g., 'USD', 'GBP', 'PKR', 'AED'
-
+  currency?: string;
   status: BookingStatus;
   notes: string;
   preferences: string;
@@ -59,32 +53,26 @@ export interface ServiceItem {
   name: string;
   amount: number;
   currency: string;
-  timeCategory: string;
-  description?: string;
-  menuItems?: MenuItem[]; // Added for catering details
 }
 
 export interface Business {
   id: string;
   name: string;
-  category: string; // 'Hall Services' | 'Decoration' | 'Photography' | 'Catering' | 'Car Rental'
-  contactName: string;
+  category: string;
+  contactPerson: string;
   email: string;
   phone: string;
+  address: string;
   rating: number;
-  
-  // Location for filtering
-  country?: string;
-  city: string;
-  district?: string;
-
-  // Details
-  description?: string;
-  services?: ServiceItem[];
-  images?: string[]; // URLs
-  videoUrl?: string; // New field for video
-
-  // Maps & Directions
+  reviews: number;
+  status: 'Active' | 'Pending' | 'Inactive';
+  joinedDate: string; // ADDED THIS FIELD
+  verified: boolean;
+  services: ServiceItem[];
+  description: string;
+  imageUrl: string;
+  gallery: string[];
+  videoUrl?: string;
   mapsUrl?: string;
   directions?: string;
 }
@@ -113,10 +101,10 @@ export interface UserProfile {
   role: 'business' | 'individual' | 'owner';
   country: string;
   currency: string;
-  businessCategory?: string; // Optional field for business users
-  createdAt: string; // ISO Date string
+  businessCategory?: string;
+  createdAt: string;
   isPaid: boolean;
-  businessId?: string; // Link to business profile
+  businessId?: string;
 }
 
 export interface ActivityLog {
@@ -146,6 +134,6 @@ export interface Suggestion {
   userName: string;
   userRole: 'business' | 'individual';
   content: string;
-  timestamp: string;
   status: 'new' | 'reviewed';
+  timestamp: string;
 }

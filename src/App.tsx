@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import CustomerPortal from './components/CustomerPortal';
 import BusinessPortal from './components/BusinessPortal';
@@ -87,7 +86,8 @@ const AppContent: React.FC = () => {
   const [showUnlimited, setShowUnlimited] = useState(false);
 
   // Business Trial Logic
-  const [trialDaysRemaining, setTrialDaysRemaining] = useState(90);
+  // Client Request: Change trial from 90 to 15 days
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState(15); 
 
   // Calculate trial days when user changes
   useEffect(() => {
@@ -106,15 +106,19 @@ const AppContent: React.FC = () => {
           id: crypto.randomUUID(),
           name: currentUser.name,
           category: currentUser.businessCategory || 'Hall Services',
-          contactName: currentUser.name,
+          contactPerson: currentUser.name, // FIX: Changed from contactName to contactPerson
           email: isEmail ? currentUser.email : '',
           phone: isEmail ? '' : currentUser.email,
           rating: 0,
-          city: currentUser.country,
-          country: currentUser.country,
+          reviews: 0,
+          status: 'Active',
+          joinedDate: new Date().toISOString(),
+          verified: false,
+          address: currentUser.country,
+          imageUrl: '',
+          gallery: [],
           description: '',
-          services: [],
-          images: []
+          services: []
         };
         setMyBusinessProfile(newProfile);
         setBusinesses(prev => [...prev, newProfile]);
@@ -125,7 +129,7 @@ const AppContent: React.FC = () => {
         const now = new Date();
         const diffTime = now.getTime() - created.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        const remaining = 90 - diffDays;
+        const remaining = 15 - diffDays; // Updated to 15 days
         setTrialDaysRemaining(remaining);
         if (remaining <= 0) setIsBillingModalOpen(true);
       }
@@ -161,13 +165,14 @@ const AppContent: React.FC = () => {
   };
 
   // --- Handlers ---
-  const handleLogin = (role: 'business' | 'individual', identifier: string) => {
+  const handleLogin = (role: 'business' | 'individual' | 'owner', identifier: string) => {
     setPortalActiveTab('overview');
     
-    if (identifier.toLowerCase() === 'admin@eventmanager.com') {
+    // Admin/Owner Login Logic
+    if (identifier.toLowerCase() === 'admin@eventmanager.com' || role === 'owner') {
       const ownerUser: UserProfile = {
         name: 'Super Admin',
-        email: 'admin@eventmanager.com',
+        email: identifier,
         role: 'owner',
         country: 'United States',
         currency: 'USD',
@@ -176,6 +181,7 @@ const AppContent: React.FC = () => {
       };
       setCurrentUser(ownerUser);
       logActivity('login', 'Owner Access Granted', ownerUser);
+      setShowLanding(false); // Hide landing page on login
       return;
     }
 
@@ -190,7 +196,8 @@ const AppContent: React.FC = () => {
       );
       if (existingUser) {
         name = existingUser.name;
-        if (existingUser.country) userCountry = existingUser.country;
+        // Check if address matches a country name logic would be here, usually stored separately
+        // For mock purposes assume default US if not found
       } else {
         name = 'New Business'; 
       }
@@ -210,10 +217,11 @@ const AppContent: React.FC = () => {
     
     const selectedCurrency = COUNTRIES_CURRENCIES.find(c => c.country === userCountry)?.currency || 'USD';
 
+    // FIX: Ensure all required properties for UserProfile are present
     const tempUser: UserProfile = { 
-      name, 
+      name: name, 
       email: identifier, // Use identifier as "email" field for state consistency
-      role, 
+      role: role, 
       country: userCountry,
       currency: selectedCurrency,
       createdAt: new Date().toISOString(), 
@@ -221,6 +229,7 @@ const AppContent: React.FC = () => {
     };
     logActivity('login', `Logged in successfully via ${isEmail ? 'Email' : 'Mobile'}`, tempUser);
     setCurrentUser(tempUser);
+    setShowLanding(false); // Hide landing page on login
   };
 
   const handleSignup = (role: 'business' | 'individual', name: string, identifier: string, country: string, businessType?: string) => {
@@ -239,6 +248,7 @@ const AppContent: React.FC = () => {
     const isEmail = identifier.includes('@');
     logActivity('signup' as any, `Created account from ${country} via ${isEmail ? 'Email' : 'Mobile'}`, tempUser);
     setCurrentUser(tempUser);
+    setShowLanding(false); // Hide landing page on signup
   };
 
   const handleLogout = () => {
@@ -298,6 +308,7 @@ const AppContent: React.FC = () => {
         i.email.toLowerCase() === currentUser.email.toLowerCase() ||
         i.phone === currentUser.email
     );
+    // Client Requirement: Only 1 event allowed on free plan
     if (userEvents.length >= 1 && !currentUser.isPaid) {
       setPendingWizardAction(true);
       setIsBillingModalOpen(true);

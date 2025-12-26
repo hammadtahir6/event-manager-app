@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Building2, Users, ArrowRight, Phone, Mail, ChevronDown, Smartphone } from 'lucide-react';
+import { Building2, Users, ArrowRight, Mail } from 'lucide-react';
 import Logo from './Logo';
 import { useLanguage } from '../contexts/LanguageContext';
-import { COUNTRIES_CURRENCIES } from '../constants';
 
 interface LoginPageProps {
   onLogin: (role: 'business' | 'individual', identifier: string) => void;
@@ -12,9 +11,7 @@ interface LoginPageProps {
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToSignup, onOpenUnlimited }) => {
   const [activeTab, setActiveTab] = useState<'business' | 'individual'>('business');
-  const [loginMethod, setLoginMethod] = useState<'email' | 'mobile'>('email');
-  const [identifier, setIdentifier] = useState('');
-  const [selectedDialCode, setSelectedDialCode] = useState('+1');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { t, language } = useLanguage();
@@ -23,54 +20,35 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToSignup, onOp
     e.preventDefault();
     setIsLoading(true);
 
-    // 1. Construct the full identifier (Email or Phone)
-    const fullIdentifier = loginMethod === 'email' 
-      ? identifier 
-      : `${selectedDialCode}${identifier.replace(/\D/g, '')}`;
-
     try {
-      // 2. Call the Real Backend API
-      const response = await fetch('http://localhost:5000/api/login', {
+      // Point to your deployed backend URL here if available, otherwise localhost
+      const backendUrl = 'http://localhost:5000/api/login'; 
+      
+      const response = await fetch(backendUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: fullIdentifier, // Sending fullIdentifier as 'email' to match backend expectation
-          password: password,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // 3. Success Logic
-        // Save the JWT token for future authenticated requests
         localStorage.setItem('token', data.token);
-        
-        // Notify the parent component that login was successful
-        // We use the role returned from the database to ensure it's correct
         onLogin(data.user.role, data.user.email);
       } else {
-        // 4. Handle Server Errors (e.g., "User not found", "Invalid password")
-        alert(data.error || 'Login failed. Please check your credentials.');
+        alert(data.error || 'Login failed.');
       }
     } catch (error) {
-      // 5. Handle Network Errors (e.g., Backend not running)
       console.error('Login error:', error);
-      alert('Network error. Is the backend server running on port 5000?');
+      alert('Network error. Ensure backend is running.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const toggleMethod = () => {
-    setLoginMethod(prev => prev === 'email' ? 'mobile' : 'email');
-    setIdentifier('');
-  };
-
   return (
     <div className="min-h-screen bg-wedding-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Blobs (Same as before) */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <div className="absolute -top-20 -right-20 w-96 h-96 bg-wedding-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
         <div className="absolute top-40 -left-20 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
@@ -80,13 +58,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToSignup, onOp
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl z-10 overflow-hidden border border-white/50 backdrop-blur-sm">
         <div className="p-8 pb-6 text-center">
           <div className="flex justify-center mb-6">
-            <div 
-                className="w-14 h-14 bg-wedding-100 rounded-2xl flex items-center justify-center cursor-pointer hover:rotate-3 transition-transform shadow-sm"
-                onClick={onOpenUnlimited}
-            >
-              <div className="text-wedding-600">
-                 <Logo className="w-8 h-8" />
-              </div>
+            <div className="w-14 h-14 bg-wedding-100 rounded-2xl flex items-center justify-center cursor-pointer hover:rotate-3 transition-transform shadow-sm" onClick={onOpenUnlimited}>
+              <div className="text-wedding-600"><Logo className="w-8 h-8" /></div>
             </div>
           </div>
           <h1 className="text-3xl font-serif font-black tracking-tighter text-gray-800 mb-2">{t('login.title')}</h1>
@@ -95,19 +68,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToSignup, onOp
 
         <div className="px-8 mb-6">
           <div className="flex bg-gray-100 p-1 rounded-xl">
-            <button
-              onClick={() => setActiveTab('business')}
-              className={`flex-1 flex items-center justify-center py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'business' ? 'bg-white text-wedding-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <Building2 className="w-4 h-4 mr-2" />
-              {t('login.business')}
+            <button onClick={() => setActiveTab('business')} className={`flex-1 flex items-center justify-center py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'business' ? 'bg-white text-wedding-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              <Building2 className="w-4 h-4 mr-2" /> {t('login.business')}
             </button>
-            <button
-              onClick={() => setActiveTab('individual')}
-              className={`flex-1 flex items-center justify-center py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'individual' ? 'bg-white text-wedding-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <Users className="w-4 h-4 mr-2" />
-              {t('login.individual')}
+            <button onClick={() => setActiveTab('individual')} className={`flex-1 flex items-center justify-center py-2.5 text-sm font-bold rounded-lg transition-all ${activeTab === 'individual' ? 'bg-white text-wedding-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+              <Users className="w-4 h-4 mr-2" /> {t('login.individual')}
             </button>
           </div>
         </div>
@@ -115,53 +80,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToSignup, onOp
         <form onSubmit={handleSubmit} className="p-8 pt-0 space-y-5">
           <div className="space-y-4">
             <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-sm font-bold text-gray-700">
-                  {loginMethod === 'email' ? t('login.email') : 'Mobile Number'}
-                </label>
-                <button 
-                  type="button" 
-                  onClick={toggleMethod}
-                  className="text-[10px] font-black text-wedding-600 uppercase tracking-widest hover:text-wedding-700 transition-colors flex items-center"
-                >
-                  {loginMethod === 'email' ? (
-                    <><Smartphone className="w-3 h-3 mr-1" /> Use Mobile</>
-                  ) : (
-                    <><Mail className="w-3 h-3 mr-1" /> Use Email</>
-                  )}
-                </button>
-              </div>
-              
-              <div className="flex items-stretch gap-0 border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-wedding-500 transition-all bg-gray-50">
-                {loginMethod === 'mobile' && (
-                  <div className="relative border-r border-gray-200 bg-white shrink-0">
-                    <select
-                      value={selectedDialCode}
-                      onChange={(e) => setSelectedDialCode(e.target.value)}
-                      className="h-full pl-3 pr-8 bg-transparent outline-none appearance-none text-xs font-bold cursor-pointer"
-                    >
-                      {COUNTRIES_CURRENCIES.map(c => (
-                        <option key={c.country} value={c.dialCode}>
-                          {c.flag} {c.dialCode}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-                  </div>
-                )}
-                <div className="relative flex-1 group">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-wedding-500 transition-colors">
-                    {loginMethod === 'email' ? <Mail className="w-5 h-5" /> : <Phone className="w-5 h-5" />}
-                  </div>
-                  <input
-                    type={loginMethod === 'email' ? 'email' : 'tel'}
-                    required
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3.5 bg-transparent outline-none text-sm placeholder:text-gray-400"
-                    placeholder={loginMethod === 'email' ? "email@example.com" : "123 456 7890"}
-                  />
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">{t('login.email')}</label>
+              <div className="relative group">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-wedding-500 transition-colors">
+                  <Mail className="w-5 h-5" />
                 </div>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-wedding-500 outline-none text-sm"
+                  placeholder="email@example.com"
+                />
               </div>
             </div>
             
@@ -172,43 +103,25 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToSignup, onOp
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-wedding-500 outline-none transition-all text-sm"
+                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-wedding-500 outline-none text-sm"
                 placeholder="••••••••"
               />
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-wedding-600 hover:bg-wedding-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-wedding-100 hover:shadow-xl transition-all flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed group transform active:scale-[0.98]"
-          >
-            {isLoading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <>
-                <span>{activeTab === 'business' ? t('login.signin') : t('login.access')}</span>
-                <ArrowRight className={`w-4 h-4 transition-transform ${language === 'ar' ? 'group-hover:-translate-x-1 rotate-180' : 'group-hover:translate-x-1'}`} />
-              </>
+          <button type="submit" disabled={isLoading} className="w-full bg-wedding-600 hover:bg-wedding-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-wedding-100 hover:shadow-xl transition-all flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed group">
+            {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : (
+              <><span>{activeTab === 'business' ? t('login.signin') : t('login.access')}</span><ArrowRight className="w-4 h-4" /></>
             )}
           </button>
 
           <div className="text-center pt-2">
             <span className="text-sm text-gray-500">{t('login.noAccount')} </span>
-            <button 
-              type="button" 
-              onClick={onNavigateToSignup}
-              className="text-sm font-black text-wedding-600 hover:text-wedding-700 transition-colors uppercase tracking-tight"
-            >
-              {t('button.signup')}
-            </button>
+            <button type="button" onClick={onNavigateToSignup} className="text-sm font-black text-wedding-600 hover:text-wedding-700 transition-colors uppercase tracking-tight">{t('button.signup')}</button>
           </div>
         </form>
       </div>
-
-      <p className="mt-8 text-center text-gray-400 text-xs font-bold uppercase tracking-widest">
-        &copy; 2024 {t('app.name')} • Orchestrate Magic
-      </p>
+      <p className="mt-8 text-center text-gray-400 text-xs font-bold uppercase tracking-widest">&copy; 2024 {t('app.name')} • Orchestrate Magic</p>
     </div>
   );
 };
