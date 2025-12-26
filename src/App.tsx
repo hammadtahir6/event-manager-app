@@ -12,6 +12,9 @@ import { MOCK_INDIVIDUALS, MOCK_BUSINESSES, COUNTRIES_CURRENCIES } from './const
 import { Individual, Business, UserProfile, VendorInquiry, ActivityLog, Transaction, Suggestion } from './types';
 import { LanguageProvider } from './contexts/LanguageContext';
 
+// REPLACE WITH YOUR RENDER/RAILWAY BACKEND URL
+const API_URL = 'https://event-manager-backend-production-1db4.up.railway.app'; 
+
 const AppContent: React.FC = () => {
   // Auth State
   const [showLanding, setShowLanding] = useState(true);
@@ -19,6 +22,7 @@ const AppContent: React.FC = () => {
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
 
   // App State - With Persistence
+  // Ideally, this should fetch from API, but keeping local backup logic for now
   const [individuals, setIndividuals] = useState<Individual[]>(() => {
     try {
       const saved = localStorage.getItem('eventManager_individuals');
@@ -28,6 +32,14 @@ const AppContent: React.FC = () => {
       return MOCK_INDIVIDUALS;
     }
   });
+
+  // Example: Fetch events from backend on load if user is logged in
+  useEffect(() => {
+    if (currentUser && currentUser.role === 'individual') {
+        // Fetch logic would go here: fetch(`${API_URL}/api/events?userId=${currentUser.email}`)
+        // For now, we stick to the existing localStorage flow but with the API_URL ready for future calls
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     localStorage.setItem('eventManager_individuals', JSON.stringify(individuals));
@@ -106,7 +118,7 @@ const AppContent: React.FC = () => {
           id: crypto.randomUUID(),
           name: currentUser.name,
           category: currentUser.businessCategory || 'Hall Services',
-          contactPerson: currentUser.name, // FIX: Changed from contactName to contactPerson
+          contactPerson: currentUser.name, 
           email: isEmail ? currentUser.email : '',
           phone: isEmail ? '' : currentUser.email,
           rating: 0,
@@ -129,7 +141,7 @@ const AppContent: React.FC = () => {
         const now = new Date();
         const diffTime = now.getTime() - created.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        const remaining = 15 - diffDays; // Updated to 15 days
+        const remaining = 15 - diffDays; 
         setTrialDaysRemaining(remaining);
         if (remaining <= 0) setIsBillingModalOpen(true);
       }
@@ -196,8 +208,6 @@ const AppContent: React.FC = () => {
       );
       if (existingUser) {
         name = existingUser.name;
-        // Check if address matches a country name logic would be here, usually stored separately
-        // For mock purposes assume default US if not found
       } else {
         name = 'New Business'; 
       }
@@ -217,10 +227,9 @@ const AppContent: React.FC = () => {
     
     const selectedCurrency = COUNTRIES_CURRENCIES.find(c => c.country === userCountry)?.currency || 'USD';
 
-    // FIX: Ensure all required properties for UserProfile are present
     const tempUser: UserProfile = { 
       name: name, 
-      email: identifier, // Use identifier as "email" field for state consistency
+      email: identifier, 
       role: role, 
       country: userCountry,
       currency: selectedCurrency,
