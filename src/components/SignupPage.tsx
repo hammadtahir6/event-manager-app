@@ -30,9 +30,12 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup, onNavigateToLogin, on
     setIsLoading(true);
 
     try {
-      const backendUrl = 'event-manager-backend-production-1db4.up.railway.app'; // Update this for production later
+      // REPLACE THIS URL WITH YOUR RAILWAY/RENDER URL AFTER DEPLOYMENT
+      const API_URL = 'http://localhost:5000'; 
       
-      const response = await fetch(backendUrl, {
+      console.log(`Attempting signup to: ${API_URL}/api/signup`);
+
+      const response = await fetch(`${API_URL}/api/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -55,7 +58,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup, onNavigateToLogin, on
       }
     } catch (error) {
       console.error('Signup error:', error);
-      alert('Network error. Is the backend server running?');
+      alert('Network error. Please make sure the backend server is running and accessible.');
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +68,6 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup, onNavigateToLogin, on
     <div className="min-h-screen bg-wedding-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <PolicyModal isOpen={!!policyType} type={policyType} onClose={() => setPolicyType(null)} />
       
-      {/* Background Blobs */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <div className="absolute -top-20 -right-20 w-96 h-96 bg-wedding-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
         <div className="absolute top-40 -left-20 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>

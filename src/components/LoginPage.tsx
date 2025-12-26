@@ -4,7 +4,7 @@ import Logo from './Logo';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface LoginPageProps {
-  onLogin: (role: 'business' | 'individual', identifier: string) => void;
+  onLogin: (role: 'business' | 'individual' | 'owner', identifier: string) => void;
   onNavigateToSignup: () => void;
   onOpenUnlimited: () => void;
 }
@@ -21,10 +21,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToSignup, onOp
     setIsLoading(true);
 
     try {
-      // Point to your deployed backend URL here if available, otherwise localhost
-      const backendUrl = 'event-manager-backend-production-1db4.up.railway.app'; 
+      // REPLACE THIS URL WITH YOUR RAILWAY/RENDER URL AFTER DEPLOYMENT
+      // Example: const API_URL = 'https://event-manager-backend.up.railway.app';
+      const API_URL = 'http://localhost:5000'; 
       
-      const response = await fetch(backendUrl, {
+      console.log(`Attempting login to: ${API_URL}/api/login`);
+
+      const response = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -33,14 +36,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToSignup, onOp
       const data = await response.json();
 
       if (response.ok) {
+        console.log('Login successful:', data);
         localStorage.setItem('token', data.token);
         onLogin(data.user.role, data.user.email);
       } else {
-        alert(data.error || 'Login failed.');
+        console.error('Login failed:', data.error);
+        alert(data.error || 'Login failed. Please check your credentials.');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      alert('Network error. Ensure backend is running.');
+      console.error('Network error during login:', error);
+      alert('Network error. Please make sure the backend server is running and accessible.');
     } finally {
       setIsLoading(false);
     }
@@ -48,7 +53,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToSignup, onOp
 
   return (
     <div className="min-h-screen bg-wedding-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Blobs (Same as before) */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <div className="absolute -top-20 -right-20 w-96 h-96 bg-wedding-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
         <div className="absolute top-40 -left-20 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
