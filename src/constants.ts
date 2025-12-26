@@ -41,20 +41,107 @@ export const STATUS_COLORS = {
   [BookingStatus.Cancelled]: 'bg-red-100 text-red-800'
 };
 
-// FIXED PRICING: $15 for Individuals, $30 for Business
-// These values are hardcoded for all regions as requested.
+// FIXED PRICING: All countries use USD ($) and fixed rates ($15 / $30).
 export const COUNTRIES_CURRENCIES = [
-  { country: 'United States', currency: 'USD', symbol: '$', rate: 1, flag: '🇺🇸', fixedIndividual: 15, fixedBusiness: 30 },
-  { country: 'United Kingdom', currency: 'GBP', symbol: '£', rate: 0.79, flag: '🇬🇧', fixedIndividual: 15, fixedBusiness: 30 },
-  { country: 'Canada', currency: 'CAD', symbol: 'C$', rate: 1.36, flag: '🇨🇦', fixedIndividual: 15, fixedBusiness: 30 },
-  { country: 'Australia', currency: 'AUD', symbol: 'A$', rate: 1.52, flag: '🇦🇺', fixedIndividual: 15, fixedBusiness: 30 },
-  { country: 'European Union', currency: 'EUR', symbol: '€', rate: 0.92, flag: '🇪🇺', fixedIndividual: 15, fixedBusiness: 30 },
-  { country: 'Pakistan', currency: 'PKR', symbol: '₨', rate: 278.50, flag: '🇵🇰', fixedIndividual: 15, fixedBusiness: 30 },
-  { country: 'India', currency: 'INR', symbol: '₹', rate: 83.50, flag: '🇮🇳', fixedIndividual: 15, fixedBusiness: 30 },
-  { country: 'United Arab Emirates', currency: 'AED', symbol: 'د.إ', rate: 3.67, flag: '🇦🇪', fixedIndividual: 15, fixedBusiness: 30 },
-  { country: 'Saudi Arabia', currency: 'SAR', symbol: '﷼', rate: 3.75, flag: '🇸🇦', fixedIndividual: 15, fixedBusiness: 30 },
-  { country: 'China', currency: 'CNY', symbol: '¥', rate: 7.23, flag: '🇨🇳', fixedIndividual: 15, fixedBusiness: 30 },
-  { country: 'Japan', currency: 'JPY', symbol: '¥', rate: 151.50, flag: '🇯🇵', fixedIndividual: 15, fixedBusiness: 30 },
+  { 
+    country: 'United States', 
+    currency: 'USD', 
+    symbol: '$', 
+    rate: 1, 
+    flag: '🇺🇸', 
+    fixedIndividual: 15, 
+    fixedBusiness: 30 
+  },
+  { 
+    country: 'United Kingdom', 
+    currency: 'USD', // Force USD
+    symbol: '$', 
+    rate: 1, 
+    flag: '🇬🇧', 
+    fixedIndividual: 15, 
+    fixedBusiness: 30 
+  },
+  { 
+    country: 'Canada', 
+    currency: 'USD', 
+    symbol: '$', 
+    rate: 1, 
+    flag: '🇨🇦', 
+    fixedIndividual: 15, 
+    fixedBusiness: 30 
+  },
+  { 
+    country: 'Australia', 
+    currency: 'USD', 
+    symbol: '$', 
+    rate: 1, 
+    flag: '🇦🇺', 
+    fixedIndividual: 15, 
+    fixedBusiness: 30 
+  },
+  { 
+    country: 'European Union', 
+    currency: 'USD', 
+    symbol: '$', 
+    rate: 1, 
+    flag: '🇪🇺', 
+    fixedIndividual: 15, 
+    fixedBusiness: 30 
+  },
+  { 
+    country: 'Pakistan', 
+    currency: 'USD', 
+    symbol: '$', 
+    rate: 1, 
+    flag: '🇵🇰', 
+    fixedIndividual: 15, 
+    fixedBusiness: 30 
+  },
+  { 
+    country: 'India', 
+    currency: 'USD', 
+    symbol: '$', 
+    rate: 1, 
+    flag: '🇮🇳', 
+    fixedIndividual: 15, 
+    fixedBusiness: 30 
+  },
+  { 
+    country: 'United Arab Emirates', 
+    currency: 'USD', 
+    symbol: '$', 
+    rate: 1, 
+    flag: '🇦🇪', 
+    fixedIndividual: 15, 
+    fixedBusiness: 30 
+  },
+  { 
+    country: 'Saudi Arabia', 
+    currency: 'USD', 
+    symbol: '$', 
+    rate: 1, 
+    flag: '🇸🇦', 
+    fixedIndividual: 15, 
+    fixedBusiness: 30 
+  },
+  { 
+    country: 'China', 
+    currency: 'USD', 
+    symbol: '$', 
+    rate: 1, 
+    flag: '🇨🇳', 
+    fixedIndividual: 15, 
+    fixedBusiness: 30 
+  },
+  { 
+    country: 'Japan', 
+    currency: 'USD', 
+    symbol: '$', 
+    rate: 1, 
+    flag: '🇯🇵', 
+    fixedIndividual: 15, 
+    fixedBusiness: 30 
+  },
 ];
 
 export const LOCATION_DATA = {
