@@ -30,7 +30,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup, onNavigateToLogin, on
     setIsLoading(true);
 
     try {
-      const backendUrl = 'http://localhost:5000/api/signup'; // Update this for production later
+      const backendUrl = 'event-manager-backend-production-1db4.up.railway.app'; // Update this for production later
       
       const response = await fetch(backendUrl, {
         method: 'POST',
