@@ -12,34 +12,30 @@ import { MOCK_INDIVIDUALS, MOCK_BUSINESSES, COUNTRIES_CURRENCIES } from './const
 import { Individual, Business, UserProfile, VendorInquiry, ActivityLog, Transaction, Suggestion } from './types';
 import { LanguageProvider } from './contexts/LanguageContext';
 
-// REPLACE WITH YOUR RENDER/RAILWAY BACKEND URL
-const API_URL = 'https://event-manager-backend-production-1db4.up.railway.app'; 
-
 const AppContent: React.FC = () => {
-  // Auth State
   const [showLanding, setShowLanding] = useState(true);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
 
-  // App State - With Persistence
-  // Ideally, this should fetch from API, but keeping local backup logic for now
+  // --- LOCAL STORAGE DATA ---
+  // We use this to simulate a database for the demo
+  const [users, setUsers] = useState<UserProfile[]>(() => {
+    try {
+      const saved = localStorage.getItem('eventManager_users');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('eventManager_users', JSON.stringify(users));
+  }, [users]);
+
   const [individuals, setIndividuals] = useState<Individual[]>(() => {
     try {
       const saved = localStorage.getItem('eventManager_individuals');
       return saved ? JSON.parse(saved) : MOCK_INDIVIDUALS;
-    } catch (e) {
-      console.error("Failed to load individuals from storage", e);
-      return MOCK_INDIVIDUALS;
-    }
+    } catch { return MOCK_INDIVIDUALS; }
   });
-
-  // Example: Fetch events from backend on load if user is logged in
-  useEffect(() => {
-    if (currentUser && currentUser.role === 'individual') {
-        // Fetch logic would go here: fetch(`${API_URL}/api/events?userId=${currentUser.email}`)
-        // For now, we stick to the existing localStorage flow but with the API_URL ready for future calls
-    }
-  }, [currentUser]);
 
   useEffect(() => {
     localStorage.setItem('eventManager_individuals', JSON.stringify(individuals));
@@ -49,78 +45,63 @@ const AppContent: React.FC = () => {
     try {
       const saved = localStorage.getItem('eventManager_businesses');
       return saved ? JSON.parse(saved) : MOCK_BUSINESSES;
-    } catch (e) {
-      console.error("Failed to load businesses from storage", e);
-      return MOCK_BUSINESSES;
-    }
+    } catch { return MOCK_BUSINESSES; }
   });
 
   useEffect(() => {
     localStorage.setItem('eventManager_businesses', JSON.stringify(businesses));
   }, [businesses]);
 
+  // ... (Keep existing state for suggestions, activities, etc.) ...
   const [suggestions, setSuggestions] = useState<Suggestion[]>(() => {
-    try {
-      const saved = localStorage.getItem('eventManager_suggestions');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
+    try { return JSON.parse(localStorage.getItem('eventManager_suggestions') || '[]'); } catch { return []; }
   });
+  useEffect(() => localStorage.setItem('eventManager_suggestions', JSON.stringify(suggestions)), [suggestions]);
 
-  useEffect(() => {
-    localStorage.setItem('eventManager_suggestions', JSON.stringify(suggestions));
-  }, [suggestions]);
-
-  // Track the logged in business profile separately for easy editing
   const [myBusinessProfile, setMyBusinessProfile] = useState<Business | null>(null);
-  
-  // Inquiries State
   const [vendorInquiries, setVendorInquiries] = useState<VendorInquiry[]>([]);
-
-  // Activity Log State
   const [activities, setActivities] = useState<ActivityLog[]>([]);
-
-  // Transaction State (For Owner Dashboard)
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-
-  // Portal State
   const [portalActiveTab, setPortalActiveTab] = useState<'overview' | 'vendors' | 'gallery' | 'events'>('overview');
-
-  // Wizard State
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-
-  // Billing State
   const [isBillingModalOpen, setIsBillingModalOpen] = useState(false);
-  const [pendingWizardAction, setPendingWizardAction] = useState(false); // If true, open wizard after payment
-
-  // Unlimited Solutions Modal State
+  const [pendingWizardAction, setPendingWizardAction] = useState(false); 
   const [showUnlimited, setShowUnlimited] = useState(false);
-
-  // Business Trial Logic
-  // Client Request: Change trial from 90 to 15 days
   const [trialDaysRemaining, setTrialDaysRemaining] = useState(15); 
 
-  // Calculate trial days when user changes
+  // Helper to Log Activity
+  const logActivity = (
+    actionType: ActivityLog['actionType'],
+    description: string,
+    overrideUser?: { name: string; email: string; role: 'business' | 'individual' | 'owner' }
+  ) => {
+    const user = overrideUser || currentUser;
+    if (!user) return;
+    const newActivity: ActivityLog = {
+      id: crypto.randomUUID(),
+      userId: user.email,
+      userName: user.name,
+      userRole: user.role,
+      actionType,
+      description,
+      timestamp: new Date().toISOString(),
+    };
+    setActivities(prev => [newActivity, ...prev]);
+  };
+
   useEffect(() => {
     if (currentUser?.role === 'business') {
-      // Load/Find Business Profile
-      const profile = businesses.find(b => 
-        b.email.toLowerCase() === currentUser.email.toLowerCase() || 
-        b.phone === currentUser.email // email field used as identifier
-      );
+      const profile = businesses.find(b => b.email === currentUser.email);
       if (profile) {
         setMyBusinessProfile(profile);
       } else {
-        // Create an initial empty profile for new signups
-        const isEmail = currentUser.email.includes('@');
         const newProfile: Business = {
           id: crypto.randomUUID(),
           name: currentUser.name,
           category: currentUser.businessCategory || 'Hall Services',
-          contactPerson: currentUser.name, 
-          email: isEmail ? currentUser.email : '',
-          phone: isEmail ? '' : currentUser.email,
+          contactPerson: currentUser.name,
+          email: currentUser.email,
+          phone: '',
           rating: 0,
           reviews: 0,
           status: 'Active',
@@ -150,41 +131,18 @@ const AppContent: React.FC = () => {
     }
   }, [currentUser, businesses]);
 
-  // Helper to Log Activity
-  const logActivity = (
-    actionType: ActivityLog['actionType'],
-    description: string,
-    overrideUser?: { name: string; email: string; role: 'business' | 'individual' | 'owner' }
-  ) => {
-    const user = overrideUser || currentUser;
-    if (!user) return;
+  const handleOpenUnlimited = () => setShowUnlimited(true);
 
-    const newActivity: ActivityLog = {
-      id: crypto.randomUUID(),
-      userId: user.email,
-      userName: user.name,
-      userRole: user.role,
-      actionType,
-      description,
-      timestamp: new Date().toISOString(),
-    };
-
-    setActivities(prev => [newActivity, ...prev]);
-  };
-
-  const handleOpenUnlimited = () => {
-    setShowUnlimited(true);
-  };
-
-  // --- Handlers ---
+  // --- MOCK AUTH HANDLERS (No Backend Required) ---
+  
   const handleLogin = (role: 'business' | 'individual' | 'owner', identifier: string) => {
     setPortalActiveTab('overview');
     
-    // Admin/Owner Login Logic
-    if (identifier.toLowerCase() === 'admin@eventmanager.com' || role === 'owner') {
+    // Admin Login Logic
+    if (identifier.toLowerCase() === 'admin@eventmanager.com') {
       const ownerUser: UserProfile = {
         name: 'Super Admin',
-        email: identifier,
+        email: 'admin@eventmanager.com',
         role: 'owner',
         country: 'United States',
         currency: 'USD',
@@ -193,58 +151,39 @@ const AppContent: React.FC = () => {
       };
       setCurrentUser(ownerUser);
       logActivity('login', 'Owner Access Granted', ownerUser);
-      setShowLanding(false); // Hide landing page on login
+      setShowLanding(false);
       return;
     }
 
-    let name = '';
-    let userCountry = 'United States';
-    const isEmail = identifier.includes('@');
+    // Check Local Storage Users
+    const existingUser = users.find(u => u.email.toLowerCase() === identifier.toLowerCase());
     
-    if (role === 'business') {
-      const existingUser = businesses.find(b => 
-        (isEmail && b.email.toLowerCase() === identifier.toLowerCase()) ||
-        (!isEmail && b.phone === identifier)
-      );
-      if (existingUser) {
-        name = existingUser.name;
-      } else {
-        name = 'New Business'; 
-      }
+    if (existingUser) {
+        // Enforce Role Match (Client requirement: strict login)
+        if (existingUser.role !== role) {
+            alert(`This email is registered as a ${existingUser.role}. Please switch tabs.`);
+            return;
+        }
+        setCurrentUser(existingUser);
+        logActivity('login', 'Logged in successfully', existingUser);
+        setShowLanding(false);
     } else {
-      const existingUser = individuals.find(i => 
-        (isEmail && i.email.toLowerCase() === identifier.toLowerCase()) ||
-        (!isEmail && i.phone === identifier)
-      );
-      if (existingUser) {
-        name = existingUser.name;
-        if (existingUser.country) userCountry = existingUser.country;
-      } else {
-        const localPart = identifier.split('@')[0];
-        name = localPart.charAt(0).toUpperCase() + localPart.slice(1);
-      }
+        alert('User not found. Please sign up first.');
     }
-    
-    const selectedCurrency = COUNTRIES_CURRENCIES.find(c => c.country === userCountry)?.currency || 'USD';
-
-    const tempUser: UserProfile = { 
-      name: name, 
-      email: identifier, 
-      role: role, 
-      country: userCountry,
-      currency: selectedCurrency,
-      createdAt: new Date().toISOString(), 
-      isPaid: false 
-    };
-    logActivity('login', `Logged in successfully via ${isEmail ? 'Email' : 'Mobile'}`, tempUser);
-    setCurrentUser(tempUser);
-    setShowLanding(false); // Hide landing page on login
   };
 
   const handleSignup = (role: 'business' | 'individual', name: string, identifier: string, country: string, businessType?: string) => {
     setPortalActiveTab('overview');
+    
+    const exists = users.find(u => u.email.toLowerCase() === identifier.toLowerCase());
+    if (exists) {
+        alert('User already exists! Please login.');
+        setAuthView('login');
+        return;
+    }
+
     const selectedCurrency = COUNTRIES_CURRENCIES.find(c => c.country === country)?.currency || 'USD';
-    const tempUser: UserProfile = { 
+    const newUser: UserProfile = { 
       name, 
       email: identifier, 
       role, 
@@ -254,10 +193,14 @@ const AppContent: React.FC = () => {
       createdAt: new Date().toISOString(), 
       isPaid: false 
     };
-    const isEmail = identifier.includes('@');
-    logActivity('signup' as any, `Created account from ${country} via ${isEmail ? 'Email' : 'Mobile'}`, tempUser);
-    setCurrentUser(tempUser);
-    setShowLanding(false); // Hide landing page on signup
+    
+    // Save to Local Storage
+    setUsers(prev => [...prev, newUser]);
+    
+    // Auto Login
+    setCurrentUser(newUser);
+    logActivity('signup' as any, `Created account from ${country}`, newUser);
+    setShowLanding(false); 
   };
 
   const handleLogout = () => {
@@ -268,6 +211,7 @@ const AppContent: React.FC = () => {
     setIsBillingModalOpen(false);
   };
 
+  // ... (Other handlers like UpdateBusinessProfile, SaveIndividual, etc. remain the same) ...
   const handleUpdateBusinessProfile = (updated: Business) => {
     setBusinesses(prev => prev.map(b => b.id === updated.id ? updated : b));
     setMyBusinessProfile(updated);
@@ -280,7 +224,7 @@ const AppContent: React.FC = () => {
     setIsWizardOpen(false);
     setPortalActiveTab('overview'); 
     if (currentUser?.role === 'individual' && currentUser.isPaid) {
-       setCurrentUser(prev => prev ? ({...prev, isPaid: false}) : null);
+       // Optional: Reset paid status if it was a one-time fee, or keep it if subscription
     }
   };
 
@@ -313,11 +257,9 @@ const AppContent: React.FC = () => {
 
   const handleIndividualAddEventRequest = () => {
     if (!currentUser) return;
-    const userEvents = individuals.filter(i => 
-        i.email.toLowerCase() === currentUser.email.toLowerCase() ||
-        i.phone === currentUser.email
-    );
-    // Client Requirement: Only 1 event allowed on free plan
+    const userEvents = individuals.filter(i => i.email === currentUser.email);
+    
+    // TRIAL LIMIT: 1 Event for Free Users
     if (userEvents.length >= 1 && !currentUser.isPaid) {
       setPendingWizardAction(true);
       setIsBillingModalOpen(true);
@@ -328,7 +270,11 @@ const AppContent: React.FC = () => {
 
   const handlePaymentSuccess = (amount: number, currency: string) => {
     if (currentUser) {
-      setCurrentUser({ ...currentUser, isPaid: true });
+      // Update User Paid Status in Local Storage too!
+      const updatedUser = { ...currentUser, isPaid: true };
+      setCurrentUser(updatedUser);
+      setUsers(prev => prev.map(u => u.email === currentUser.email ? updatedUser : u));
+
       logActivity('payment', `Processed payment of ${currency} ${amount}`);
       const newTransaction: Transaction = {
         id: crypto.randomUUID(),
@@ -395,7 +341,7 @@ const AppContent: React.FC = () => {
           transactions={transactions}
           suggestions={suggestions}
           onUpdateSuggestionStatus={handleUpdateSuggestionStatus}
-          usersCount={individuals.length + businesses.length}
+          usersCount={users.length}
           onOpenUnlimited={handleOpenUnlimited}
         />
       ) : currentUser.role === 'individual' ? (
@@ -419,8 +365,8 @@ const AppContent: React.FC = () => {
             isOpen={isWizardOpen}
             onSave={handleSaveNewEvent}
             onCancel={() => setIsWizardOpen(false)}
-            initialEmail={currentUser.email.includes('@') ? currentUser.email : ''}
-            initialPhone={!currentUser.email.includes('@') ? currentUser.email : ''}
+            initialEmail={currentUser.email}
+            initialPhone=""
             existingEvents={individuals}
           />
           <BillingModal 

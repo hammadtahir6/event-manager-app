@@ -19,49 +19,21 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup, onNavigateToLogin, on
   const [country, setCountry] = useState('United States');
   const [businessType, setBusinessType] = useState(BUSINESS_CATEGORIES[0]);
   const [isLoading, setIsLoading] = useState(false);
-  const { t, language } = useLanguage();
-  
+  const { t } = useLanguage();
   const [agreed, setAgreed] = useState(false);
   const [policyType, setPolicyType] = useState<'privacy' | 'terms' | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreed) return;
     setIsLoading(true);
-
-    try {
-      // REPLACE THIS URL WITH YOUR RAILWAY/RENDER URL AFTER DEPLOYMENT
-      const API_URL = 'https://event-manager-backend-production-1db4.up.railway.app'; 
-      
-      console.log(`Attempting signup to: ${API_URL}/api/signup`);
-
-      const response = await fetch(`${API_URL}/api/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-          role: activeTab,
-          country,
-          businessType: activeTab === 'business' ? businessType : undefined 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        alert('Account created successfully! Please log in.');
-        onNavigateToLogin();
-      } else {
-        alert(data.error || 'Signup failed.');
-      }
-    } catch (error) {
-      console.error('Signup error:', error);
-      alert('Network error. Please make sure the backend server is running and accessible.');
-    } finally {
-      setIsLoading(false);
-    }
+    
+    // Simulate Backend
+    setTimeout(() => {
+        // Pass data up to App.tsx to save in LocalStorage
+        onSignup(activeTab, name, email, country, activeTab === 'business' ? businessType : undefined);
+        setIsLoading(false);
+    }, 800);
   };
 
   return (
@@ -103,7 +75,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup, onNavigateToLogin, on
               <label className="block text-sm font-bold text-gray-700 mb-1">{t('signup.country')}</label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <select value={country} onChange={(e) => setCountry(e.target.value)} className="w-full pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-wedding-500 outline-none appearance-none cursor-pointer transition-all text-sm">
+                <select value={country} onChange={(e) => setCountry(e.target.value)} className="w-full pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-wedding-500 outline-none cursor-pointer text-sm">
                   {COUNTRIES_CURRENCIES.map(c => <option key={c.country} value={c.country}>{c.country}</option>)}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -112,7 +84,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup, onNavigateToLogin, on
 
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">{activeTab === 'business' ? t('signup.businessName') : t('signup.fullName')}</label>
-              <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-wedding-500 outline-none transition-all text-sm" placeholder={activeTab === 'business' ? "Grand Venue Hall" : "Jane Doe"} />
+              <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-wedding-500 outline-none text-sm" placeholder={activeTab === 'business' ? "Grand Venue Hall" : "Jane Doe"} />
             </div>
 
             {activeTab === 'business' && (
@@ -120,7 +92,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup, onNavigateToLogin, on
                 <label className="block text-sm font-bold text-gray-700 mb-1">{t('signup.businessType')}</label>
                 <div className="relative">
                   <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} className="w-full pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-wedding-500 outline-none appearance-none text-sm cursor-pointer">
+                  <select value={businessType} onChange={(e) => setBusinessType(e.target.value)} className="w-full pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-wedding-500 outline-none text-sm cursor-pointer">
                     {BUSINESS_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -138,7 +110,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onSignup, onNavigateToLogin, on
             
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">{t('login.password')}</label>
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-wedding-500 outline-none transition-all text-sm" placeholder="••••••••" />
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-wedding-500 outline-none text-sm" placeholder="••••••••" />
             </div>
           </div>
           
