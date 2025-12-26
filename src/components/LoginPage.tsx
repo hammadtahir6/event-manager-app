@@ -22,7 +22,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onNavigateToSignup, onOp
 
     try {
       // Point to your deployed backend URL here if available, otherwise localhost
-      const backendUrl = 'http://localhost:5000/api/login'; 
+      const backendUrl = 'event-manager-backend-production-1db4.up.railway.app'; 
       
       const response = await fetch(backendUrl, {
         method: 'POST',
