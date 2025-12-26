@@ -1,25 +1,16 @@
 import { GoogleGenAI } from "@google/genai";
 import { Individual, Business } from "../types";
 
-// Helper function to safely get the API Key
-// This prevents the app from crashing on load if the key is missing
-const getApiKey = () => {
-  // Check Vite env var first, then process.env fallback
-  const key = import.meta.env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-  if (!key) {
-    console.warn("Gemini API Key is missing. AI features will not work.");
-    return "";
-  }
-  return key;
-};
+// --- API KEY CONFIGURATION ---
+// Ideally, use environment variables. For this demo, we use the provided key.
+const API_KEY = "AIzaSyD9deHSHjXg_zFqspoRz7yo__cOzIuRQv4";
 
 // Helper to initialize AI client only when needed
 const getAiClient = () => {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    throw new Error("Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your environment variables.");
+  if (!API_KEY) {
+    throw new Error("Gemini API Key is missing.");
   }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: API_KEY });
 };
 
 // --- AI FUNCTIONS ---
